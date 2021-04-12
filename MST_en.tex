@@ -1,0 +1,146 @@
+\documentclass{article}
+\usepackage[T2A]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{slashbox}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{amsthm}
+\pgfplotsset{compat = newest}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+
+
+
+\title{Runtime analysis of the $(1 + (\lambda, \lambda)) GA$ on the minimum spanning tree problem}
+\date{2021-04-01}
+\author{Антипов Д.С., Шныткин М.П., matveyshnytkin@gmail.com}
+
+
+\begin{document}
+  \pagenumbering{gobble}
+  \maketitle
+  \newpage
+  \pagenumbering{arabic}
+  
+
+  \section{Draft}
+  
+
+  \subsection{Introduction}
+
+The $(1 + (\lambda, \lambda)) GA$ is a recently developed genetic algorithm, inspired by black-box optimization algorithms and the process of biological genetic repair[2]. Each iteration of the algorithm consists of two phases: the mutation of an individual and the crossover of the best mutant with the original individual. The algorithm has been theoretically shown to be very effective on common sample functions. However its performance for more pragmatic problems is yet to be researched. One such class of well-known problems is graph-related computations. In this paper we will look at the performance of the  $(1 + (\lambda, \lambda)) GA$ on the minimum spanning tree problem (MST).
+
+
+  \subsection{Methods}
+
+We will estimate the expected runtime of the  $(1 + (\lambda, \lambda)) GA$ for the most wide set of graphs possible. We will use the standard fitness function for finding the minimum spanning tree proposed in Neumann, Frank, and Ingo Wegener[1]. For our estimations we will use the set of so-called Drift Theorems, which allow us to estimate the expected number of iterations of an algorithm assuming we know expected progress toward the algorithm's goal in one iteration. The progress is estimated with a potential function, and the algorithm’s goal is reached when the function hits zero. Choosing the aforementioned function is a part of this research. 
+  
+  \subsection{Lower bound}
+
+First we define the potential function. In order to do this we bound the set of considered graphs to the ones having one unique minimum spanning tree. For such graphs let the potential function $X_t$ be the amount of edges from the minimum spanning tree abscent from $x$. Our aim is to analize the last jump from non-optimal spanning tree $X_t = s$ to MST $X_{t + 1} = 0$. This implies that $s$ edges from the minimum spanning tree yet absent from $x$ will take place of $s$ edges present in $x$ but not in the minimum spanning tree.
+\\
+\\
+Let for a fixed $l$ $x_e$ be a search point with $2s$ required bit flips and additional $e \in \{i^1...i^{l-2s}\}$ error flips. Then let $p_{m,e}$ be probability of $x_e$ winning the mutation stage and $p_{c,e}$ be probability of crossower phase flipping back bits from $e$ but leaving the neccessary $2s$ bits untouched thus compleating the minimum spanning tree. Then the following equalty holds:
+
+$$
+E[X_t - X_{t+1} | X_t = s] = \sum_{l=2s}^{m} p_l \sum_{\forall e} p_{m,e} p_{c,e}
+$$
+
+
+\begin{lemma}
+$$ p_{c, e} \leq \frac{1}{\lambda^{2s - 1}}(\frac{1}{e})^\frac{l - 2s}{\lambda} $$
+\end{lemma}
+\begin{proof}
+Observe that the value of $p_{c, e}$ does not depend on particular $e$ but only on the value of $l - 2s$:
+
+$$
+p_{c, e} = p_{c, l} = 
+1 - (1 - \frac{1}{\lambda^{2s}}(1 - \frac{1}{\lambda})^{l - 2s})^\lambda \leq
+1 - (1 - \frac{1}{\lambda^{2s}}(\frac{1}{e})^\frac{l - 2s}{\lambda})^\lambda \leq
+$$
+$$
+1 - (1 - \frac{1}{\lambda^{2s - 1}}(\frac{1}{e})^\frac{l - 2s}{\lambda}) =
+ \frac{1}{\lambda^{2s - 1}}(\frac{1}{e})^\frac{l - 2s}{\lambda}.
+$$
+
+In this computations we use the fact that for  $\forall m \geq 2$  $\frac{1}{e} \geq (1 - \frac{1}{m})^m$ and Bernoulli's inequality  ${(1+x)^r \geq 1 + rx}$.
+\end{proof}
+
+\begin{lemma}
+$$ \sum_{\forall e} p_{m,e}  \leq \lambda\frac{(l - 2s + 1)...l}{(m - 2s + 1)...m}$$
+\end{lemma}
+\begin{proof}
+First, let  $p_{m,e}'$ be probability of $x_e$ appearing as one of $\lambda$ mutants. It is obvious that  $p_{m,e} \leq p_{m,e}'$, since $x_e$ may not be the mutant with the best fitness in a sample. Using -------------------------
+
+$$
+\sum_{\forall e} p_{m,e} \leq 
+\sum_{\forall e} p_{m,e}' =
+$$
+$$
+\sum_{\forall e} 1 - (1 - \frac{(l - 2s + 1)...l}{(m - 2s + 1)...m}\binom{m - 2s}{l - 2s}^{-1})^\lambda \leq
+$$
+$$
+\sum_{\forall e} 1 - (1 - \lambda\frac{(l - 2s + 1)...l}{(m - 2s + 1)...m}\binom{m - 2s}{l - 2s}^{-1}) \leq
+$$
+$$
+\sum_{\forall e} \lambda\frac{(l - 2s + 1)...l}{(m - 2s + 1)...m}\binom{m - 2s}{l - 2s}^{-1} = 
+\lambda\frac{(l - 2s + 1)...l}{(m - 2s + 1)...m}
+$$
+
+\end{proof}
+\begin{theorem}
+$$E[T]=\Omega(\frac{m^2}{\lambda^2}) $$
+\end{theorem}
+\begin{proof}
+Using lemmas 1, 2, and the binomial distribution $Bin(n, p, k)=\binom{n}{k}p^k(1-p)^{n-k}$ we compute:
+
+
+$$
+E[x_t - x_{t+1} | X_t = s] =  \sum_{l=2s}^{m} p_l \sum_{\forall e} p_{m,e} p_{c,e} \leq
+$$
+$$
+ \sum_{l=2s}^{m} p_l  \frac{1}{\lambda^{2s - 1}}(\frac{1}{e})^\frac{l - 2s}{\lambda} \sum_{\forall e} p_{m,e} \leq
+$$
+$$
+ \sum_{l=2s}^{m} p_l  \frac{1}{\lambda^{2s - 2}}(\frac{1}{e})^\frac{l - 2s}{\lambda} \frac{(l - 2s + 1)...l}{(m - 2s + 1)...m} \leq
+$$
+$$
+  \frac{1}{\lambda^{2s - 2}} \sum_{l=2s}^{m} \binom{m}{l}(\frac{\lambda}{m})^l(1-\frac{\lambda}{m})^{m-l} (\frac{1}{e})^\frac{l - 2s}{\lambda} \frac{(l - 2s + 1)...l}{(m - 2s + 1)...m} \leq
+$$
+$$
+  \frac{1}{\lambda^{2s - 2}} \sum_{l=2s}^{m} \frac{(m - 2s + 1)...m}{(l - 2s + 1)...l} \binom{m - 2s}{l - 2s}(\frac{\lambda}{m})^l(1-\frac{\lambda}{m})^{m-l} (\frac{1}{e})^\frac{l - 2s}{\lambda} \frac{(l - 2s + 1)...l}{(m - 2s + 1)...m} \leq
+$$
+$$
+(\frac{\lambda}{m})^{2s}  \frac{1}{\lambda^{2s - 2}} \sum_{l=2s}^{m} \binom{m - 2s}{l - 2s}(e^{-\frac{1}{\lambda}}\frac{\lambda}{m})^{l - 2s}(1-\frac{\lambda}{m})^{m-l}
+$$
+
+Observe that the sum in the last expression is the binomial formula, thus:
+
+$$
+(\frac{\lambda}{m})^{2s}  \frac{1}{\lambda^{2s - 2}} \sum_{l=2s}^{m} \binom{m - 2s}{l - 2s}(e^{-\frac{1}{\lambda}}\frac{\lambda}{m})^{l - 2s}(1-\frac{\lambda}{m})^{m-l} =
+$$
+$$
+(\frac{\lambda}{m})^{2s}  \frac{1}{\lambda^{2s - 2}} (1 - \frac{\lambda}{m} + e^{-\frac{1}{\lambda}}\frac{\lambda}{m})^{m - 2s}
+$$
+
+\end{proof}
+
+\textbf{Тогда из аддитивного дрифта:}
+
+$$
+E[T_1] \geq C(\lambda)^{-1} (m - 1)m
+$$
+
+\textbf{Для константного  $\lambda > 1$, для графов с единственным MST.}
+
+ТОЧНЕЕ:
+
+$$
+E[T_1] \geq \frac{e m^2}{\lambda^2}
+$$
+
+\end{document}

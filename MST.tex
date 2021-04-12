@@ -1,0 +1,208 @@
+\documentclass{article}
+\usepackage[T2A]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{slashbox}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{compat = newest}
+
+\title{Анализ генетического алгоритма (1 + (лямбда, лямбда)) на задаче минимального остовного дерева}
+\date{2021-04-01}
+\author{Антипов Д.С., Шныткин М.П., matveyshnytkin@gmail.com}
+
+\begin{document}
+  \pagenumbering{gobble}
+  \maketitle
+  \newpage
+  \pagenumbering{arabic}
+  
+
+  \section{Черновик}
+  
+Рассмотрим фазу остовного дерева.
+
+  \subsection{Оценки сверху}
+
+Зафиксируем $l$.
+
+  \subsubsection{Вероятность 2-флип-мутанта}
+
+Найдём вероятность того, что на фазе мутации произошла конкретная смена одного ребра на другое, при этом остальные $l - 2$ флипов только добавили рёбер к дереву:
+
+$$
+P_{2-flip,1} = 
+\frac{\binom{m - n}{l - 2}}{\binom{m}{l}} = 
+\frac{(m - n)! l! (m - l)!}{(l - 2)! (m - n - l + 2)! m!} =
+\frac{(m - n)! l (l - 1) (m - l)!}{(m - n - l + 2)! m!} \geq
+$$
+$$
+\frac{(m - n - l + 3)^{l - 2} l (l - 1)}{m^l} =
+\frac{l (l - 1)}{m^2} (\frac{m - n - l + 3}{m})^{l - 2} =
+$$
+$$
+\frac{l (l - 1)}{m^2} (1 - \frac{n + l - 3}{m})^{l - 2}
+$$
+
+Т.к. $\forall m \geq 2 : (1 - 1/m)^m \geq 1/4$, то \underline{при $m \geq 2(n + l - 3)$  и $m \geq (l - 2)(n + l - 3)$} выполняется:
+
+$$
+P_{2-flip,1} \geq
+\frac{l (l - 1)}{m^2} (1 - \frac{n + l - 3}{m})^{l - 2} \geq
+\frac{l (l - 1)}{m^2} \frac{1}{4}
+$$
+
+  \subsubsection{Вероятность плохого мутанта}
+
+Теперь найдём вероятность мутанта, который будет хуже 2-флип-мутанта и не пройдёт отбор (все $l$ флипов добавляют рёбра):
+
+$$
+P_{bm,1} = 
+\frac{\binom{m - n + 1}{l}}{\binom{m}{l}} = 
+\frac{(m - n + 1)! l! (m - l)!}{l! (m - n + 1 - l)! m!} =
+\frac{(m - n + 1)! (m - l)!}{(m - n + 1 - l)! m!} \geq
+$$
+$$
+\frac{(m - n + 2 - l)^l}{m^l} = 
+(\frac{m - n + 2 - l}{m})^l =   
+(1 - \frac{n + l - 2}{m})^l 
+$$
+
+Как уже упоминалось выше $\forall m \geq 2 : (1 - 1/m)^m \geq 1/4$, и \\  \underline{при $m \geq 2(n + l - 2)$  и $m \geq l (n + l - 2)$} выполняется:
+
+$$
+P_{bm,1} \geq
+(1 - \frac{n + l - 2}{m})^l \geq 
+\frac{1}{4}
+$$
+
+  \subsubsection{Вероятность поправить ошибки}
+
+
+
+  \subsection{Оценка снизу}
+
+Рассмотрим графы с единственным минимальным остовным деревом. В качестве потенциала $X$ выберем число рёбер из MST, не содержащихся в текущем дереве. Рассмотрим последний шаг с $X = 1$, в нём требуется сделать один конкретный флип, чтобы завершить дерево:
+
+$$
+E[x_t - x_{t+1} | X_t = 1] = \sum_{l=0}^{m} p_l \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} p_{cross, err}
+$$
+
+Где $p_{flip, err, best}$ - вероятность того, что после этапа мутации нужный флип произошёл при фиксированных $l - 2$ ошибочных изменений.
+
+И где $p_{cross, err}$ - вероятность удачного кроссовера, в котором флип остался, но все $l - 2$ ошибочных изменения стёрлись.
+
+Мы сразу можем сузить область $l$:
+
+$$
+E[x_t - x_{t+1} | X_t = 1] = \sum_{l=2}^{m} p_l \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} p_{cross, err}
+$$
+
+Т.к. при меньших $l$ флипа одного ребра на другое произойти не может и $p_{flip, err, best} = 0$.
+
+
+  \subsubsection{Оценка $p_{cross, err}$}
+
+Заметим, что $p_{cross, err}$ не зависит от конкретного распределения ошибок, но зависит только от значения $l - 2$:
+
+$$
+p_{cross, err} = p_{cross, l} = 
+1 - (1 - \frac{1}{\lambda^2}(1 - \frac{1}{\lambda})^{l - 2})^\lambda \leq
+1 - (1 - \frac{1}{\lambda^2}(\frac{1}{e})^\frac{l - 2}{\lambda})^\lambda \leq
+$$
+$$
+1 - (1 - \frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda}) =
+\frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda}
+$$
+
+Первый переход сделан для $\lambda \geq 2$ используя $\forall m \geq 2$  $\frac{1}{e} \geq (1 - \frac{1}{m})^m$.
+
+Второй переход - неравенство Бернулли ${(1+x)^r \geq 1 + rx}$.
+
+Итог: $p_{cross, err} \leq \frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda}$.
+
+
+  \subsubsection{Оценка суммы $p_{flip, err, best}$}
+
+Для фиксированного $l$ оценим
+
+$$
+\sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best}
+$$
+
+Сделаем оценки:
+
+$$
+p_{flip, err, best} \leq p_{flip, err, \lambda} = p_{flip, l,  \lambda}
+$$
+
+Где $p_{flip, err, \lambda}$ - вероятность флипа с ошибками появиться в качестве одного из мутантов. При таком условии мы не учитываем то, что в выборке могут быть кандидаты лучше нашего, следовательно, $p_{flip, err, \lambda} = p_{flip, l,  \lambda}$.
+
+В итоге, учитывая то, что $p_{flip, err}$ - вероятность появления мутанта c флипом и конкретной ошибкой = $\frac{(l - 1)l}{(m - 1)m}\binom{m - 2}{l - 2}^{-1}$:
+
+$$
+\sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} \leq 
+\sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, l,  \lambda} =
+$$
+$$
+\sum_{\forall \binom{m - 2}{l - 2} err} 1 - (1 - \frac{(l - 1)l}{(m - 1)m}\binom{m - 2}{l - 2}^{-1})^\lambda \leq
+\sum_{\forall \binom{m - 2}{l - 2} err} 1 - (1 - \lambda\frac{(l - 1)l}{(m - 1)m}\binom{m - 2}{l - 2}^{-1}) \leq
+$$
+$$
+\sum_{\forall \binom{m - 2}{l - 2} err} \lambda\frac{(l - 1)l}{(m - 1)m}\binom{m - 2}{l - 2}^{-1}  = 
+\lambda\frac{(l - 1)l}{(m - 1)m}
+$$
+
+  \subsubsection{Getting it all together}
+
+Оценим сверху 
+
+$$
+E[x_t - x_{t+1} | X_t = 1] = \sum_{l=0}^{m} p_l \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} p_{cross, err}
+$$
+
+Как мы уже знаем, $p_{cross, err}$ не зависит от err, но зависит только от l, следовательно, вынесем её за сумму:
+
+
+$$
+E[x_t - x_{t+1} | X_t = 1] = \sum_{l=0}^{m} p_l \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} p_{cross, err} \leq
+$$
+$$
+\sum_{l=0}^{m} p_l \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} \frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda} \leq
+$$
+$$
+\sum_{l=0}^{m} p_l \frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda} \sum_{\forall \binom{m - 2}{l - 2} err} p_{flip, err, best} \leq
+$$
+$$
+\sum_{l=0}^{m} p_l \frac{1}{\lambda}(\frac{1}{e})^\frac{l - 2}{\lambda} \lambda\frac{(l - 1)l}{(m - 1)m} =
+$$
+$$
+\frac{1}{(m - 1)m}\sum_{l=0}^{m} p_l (\frac{1}{e})^\frac{l - 2}{\lambda} (l - 1)l
+$$
+
+Для константного $\lambda$ функция $f(l) = (\frac{1}{e})^\frac{l - 2}{\lambda} (l - 1)l$ ограничена сверху константой $C$ (если верить вольфраму и здравому математическому смыслу). Сделаем последний шаг:
+
+$$
+E[x_t - x_{t+1} | X_t = 1] \leq \frac{1}{(m - 1)m}\sum_{l=0}^{m} p_l (\frac{1}{e})^\frac{l - 2}{\lambda} (l - 1)l \leq
+C(\lambda) \frac{1}{(m - 1)m}\sum_{l=0}^{m} p_l = 
+$$
+$$
+C(\lambda) \frac{1}{(m - 1)m}
+$$
+
+\textbf{Тогда из аддитивного дрифта:}
+
+$$
+E[T_1] \geq C(\lambda)^{-1} (m - 1)m
+$$
+
+\textbf{Для константного  $\lambda > 1$, для графов с единственным MST.}
+
+ТОЧНЕЕ:
+
+$$
+E[T_1] \geq \frac{e m^2}{\lambda^2}
+$$
+
+\end{document}
